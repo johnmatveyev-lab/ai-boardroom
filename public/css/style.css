@@ -1369,6 +1369,79 @@ body {
   animation: pulse 1.5s infinite;
 }
 
+/* ── Mind Map File Drawer ─────────────────────────────────────────────────── */
+.mindmap-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 44vw);
+  background: rgba(13, 15, 22, 0.95);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(22px);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+}
+
+.mindmap-drawer[hidden] {
+  display: none !important;
+}
+
+.mindmap-drawer-header {
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+
+.mindmap-drawer-title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 420px;
+}
+
+.mindmap-drawer-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+}
+.mindmap-drawer-close:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+  color: var(--text-primary);
+}
+
+.mindmap-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 16px 18px;
+}
+
+.mindmap-drawer-pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary);
+}
+
 /* ── Vault Notepad Modal ─────────────────────────────────────────────────── */
 .notepad-modal {
   position: fixed;

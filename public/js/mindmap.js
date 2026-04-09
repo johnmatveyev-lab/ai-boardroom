@@ -2,6 +2,42 @@ export async function initMindMap() {
   const container = document.getElementById('mindmap-container');
   if (!container) return;
 
+  const drawer = document.getElementById('mindmapDrawer');
+  const drawerTitle = document.getElementById('mindmapDrawerTitle');
+  const drawerContent = document.getElementById('mindmapDrawerContent');
+  const drawerClose = document.getElementById('mindmapDrawerClose');
+
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.setAttribute('hidden', '');
+    if (drawerTitle) drawerTitle.textContent = 'File';
+    if (drawerContent) drawerContent.textContent = '';
+  }
+
+  async function openVaultFile(nodeId) {
+    if (!drawer || !drawerTitle || !drawerContent) return;
+    const rel = String(nodeId || '');
+    if (!rel.startsWith('obsidian_vault/')) return;
+    const vaultPath = rel.replace(/^obsidian_vault\//, '');
+
+    drawer.removeAttribute('hidden');
+    drawerTitle.textContent = vaultPath;
+    drawerContent.textContent = 'Loading…';
+
+    try {
+      const url = `/api/vault/${encodeURIComponent(vaultPath).replace(/%2F/g, '/')}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Not found');
+      const data = await res.json();
+      drawerContent.textContent = data.content || '';
+    } catch (e) {
+      drawerContent.textContent = `Failed to load: ${vaultPath}`;
+    }
+  }
+
+  drawerClose?.addEventListener('click', closeDrawer);
+  closeDrawer();
+
   // Clear existing in case of re-render
   container.innerHTML = '';
   
@@ -24,6 +60,14 @@ export async function initMindMap() {
       .nodeLabel('name')
       .nodeAutoColorBy('group')
       .nodeVal(node => Math.max(2, node.name.length * 0.5)) // Scale node size slightly by content depth
+      .onNodeClick((node) => {
+        if (!node || node.isDir) return;
+        if (typeof node.id !== 'string') return;
+        // Only open vault-backed markdown files for now
+        if (node.id.startsWith('obsidian_vault/') && node.id.endsWith('.md')) {
+          openVaultFile(node.id);
+        }
+      })
       .linkDirectionalParticles(2) // The "electrical synapses firing"
       .linkDirectionalParticleSpeed(d => 0.005 + Math.random() * 0.01)
       .linkDirectionalParticleWidth(1.5)

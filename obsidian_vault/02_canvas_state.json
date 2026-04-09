@@ -1,0 +1,335 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-09T19:49:41.027Z",
+  "nodes": [
+    {
+      "id": "core",
+      "type": "core",
+      "title": "AI Boardroom Architecture",
+      "desc": "",
+      "status": "active",
+      "x": 0,
+      "y": 0,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_jarvis",
+      "type": "role",
+      "title": "Chief of Staff",
+      "desc": "",
+      "status": "active",
+      "x": 362.91733499073626,
+      "y": 0,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_architect",
+      "type": "role",
+      "title": "CEO / Architect",
+      "desc": "",
+      "status": "active",
+      "x": 837.6801785060346,
+      "y": 39.71478721843263,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_coder",
+      "type": "role",
+      "title": "CTO / Coder",
+      "desc": "",
+      "status": "active",
+      "x": 1250.4433151747965,
+      "y": 321.825959740681,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_creative",
+      "type": "role",
+      "title": "CMO / Creative",
+      "desc": "",
+      "status": "active",
+      "x": 52.52649635061845,
+      "y": 331.26381005398935,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_analyst",
+      "type": "role",
+      "title": "CFO / Analyst",
+      "desc": "",
+      "status": "active",
+      "x": 415.4293648239888,
+      "y": 323.76002486104386,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_product",
+      "type": "role",
+      "title": "CPO / Product Manager",
+      "desc": "",
+      "status": "active",
+      "x": 838.0724091168345,
+      "y": 306.427735631764,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_devops",
+      "type": "role",
+      "title": "Head of Infrastructure",
+      "desc": "",
+      "status": "active",
+      "x": 1036.6933996294501,
+      "y": 621.3281939161419,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_security",
+      "type": "role",
+      "title": "CISO / Security Officer",
+      "desc": "",
+      "status": "active",
+      "x": 333.80814419405425,
+      "y": 625.8667495368128,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "role_qa",
+      "type": "role",
+      "title": "Chief Quality Officer",
+      "desc": "",
+      "status": "active",
+      "x": 686.7415189624606,
+      "y": 646.2880944719666,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "gate_1",
+      "type": "gate",
+      "title": "Phase 1: Architecture Blueprint (00_spec.md)",
+      "desc": "",
+      "status": "active",
+      "x": 1703.087869869509,
+      "y": 1007.7882989644866,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "gate_2",
+      "type": "gate",
+      "title": "Phase 2: Feasibility & Grounding",
+      "desc": "",
+      "status": "active",
+      "x": 1309.8764575840376,
+      "y": 986.0479407345032,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "gate_3",
+      "type": "gate",
+      "title": "Phase 3: Implementation & Design",
+      "desc": "",
+      "status": "active",
+      "x": 97.5492075082914,
+      "y": 989.2230425006773,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "gate_4",
+      "type": "gate",
+      "title": "Phase 4: Testing & Hardening",
+      "desc": "",
+      "status": "active",
+      "x": 511.2877573447585,
+      "y": 998.2499561830203,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "gate_5",
+      "type": "gate",
+      "title": "Phase 5: Deploy & Monitor",
+      "desc": "",
+      "status": "active",
+      "x": 916.234635426094,
+      "y": 992.8118392214998,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "projects_hub",
+      "type": "hub",
+      "title": "Active Projects",
+      "desc": "",
+      "status": "active",
+      "x": 1543.785173321923,
+      "y": 632.9368789159768,
+      "w": 220,
+      "h": null,
+      "owners": []
+    },
+    {
+      "id": "upload_1775764181027",
+      "type": "note",
+      "title": "README.md",
+      "desc": "Uploaded file: README.md. Type: text/markdown.",
+      "status": "active",
+      "x": 100,
+      "y": 900,
+      "w": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1001",
+      "from": "core",
+      "to": "role_jarvis"
+    },
+    {
+      "id": "e1002",
+      "from": "core",
+      "to": "role_architect"
+    },
+    {
+      "id": "e1003",
+      "from": "core",
+      "to": "role_coder"
+    },
+    {
+      "id": "e1004",
+      "from": "core",
+      "to": "role_creative"
+    },
+    {
+      "id": "e1005",
+      "from": "core",
+      "to": "role_analyst"
+    },
+    {
+      "id": "e1006",
+      "from": "core",
+      "to": "role_product"
+    },
+    {
+      "id": "e1007",
+      "from": "core",
+      "to": "role_devops"
+    },
+    {
+      "id": "e1008",
+      "from": "core",
+      "to": "role_security"
+    },
+    {
+      "id": "e1009",
+      "from": "core",
+      "to": "role_qa"
+    },
+    {
+      "id": "e1010",
+      "from": "role_architect",
+      "to": "gate_1"
+    },
+    {
+      "id": "e1011",
+      "from": "role_product",
+      "to": "gate_1"
+    },
+    {
+      "id": "e1012",
+      "from": "gate_1",
+      "to": "gate_2"
+    },
+    {
+      "id": "e1013",
+      "from": "role_analyst",
+      "to": "gate_2"
+    },
+    {
+      "id": "e1014",
+      "from": "gate_2",
+      "to": "gate_3"
+    },
+    {
+      "id": "e1015",
+      "from": "role_coder",
+      "to": "gate_3"
+    },
+    {
+      "id": "e1016",
+      "from": "role_creative",
+      "to": "gate_3"
+    },
+    {
+      "id": "e1017",
+      "from": "gate_3",
+      "to": "gate_4"
+    },
+    {
+      "id": "e1018",
+      "from": "role_coder",
+      "to": "gate_4"
+    },
+    {
+      "id": "e1019",
+      "from": "role_security",
+      "to": "gate_4"
+    },
+    {
+      "id": "e1020",
+      "from": "role_qa",
+      "to": "gate_4"
+    },
+    {
+      "id": "e1021",
+      "from": "gate_4",
+      "to": "gate_5"
+    },
+    {
+      "id": "e1022",
+      "from": "role_jarvis",
+      "to": "gate_5"
+    },
+    {
+      "id": "e1023",
+      "from": "role_devops",
+      "to": "gate_5"
+    },
+    {
+      "id": "e1024",
+      "from": "gate_5",
+      "to": "projects_hub"
+    }
+  ],
+  "pan": {
+    "x": 31.364289781668937,
+    "y": 33.11731734238058
+  },
+  "zoom": 0.5227381630278156
+}

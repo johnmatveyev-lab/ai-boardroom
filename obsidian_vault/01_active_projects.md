@@ -21,3 +21,11 @@
 ## Current Projects
 
 _No active projects yet. Awaiting first directive from stakeholder._
+
+
+### Ingested: README.md
+- **Source:** Uploaded file
+- **Assigned to:** jarvis
+- **Ingested:** 2026-04-09
+
+- [ ] Review uploaded file: README.md

@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // ── API Routes ──────────────────────────────────────────────────────────────
-app.use('/api/chat', chatRoutes);
+app.use('/api', chatRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/vault', vaultRoutes);

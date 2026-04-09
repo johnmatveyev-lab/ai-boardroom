@@ -35,10 +35,15 @@ export async function readVault(filePath) {
  * @param {string} content - Content to write
  */
 export async function writeVault(filePath, content) {
-  const fullPath = path.join(VAULT_PATH, filePath);
-  const dir = path.dirname(fullPath);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(fullPath, content, 'utf-8');
+  try {
+    const fullPath = path.join(VAULT_PATH, filePath);
+    const dir = path.dirname(fullPath);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(fullPath, content, 'utf-8');
+  } catch (err) {
+    console.warn(`[Vault] Warning: Could not write to ${filePath}:`, err.message);
+    // Don't throw - allow app to continue even if vault writing fails
+  }
 }
 
 /**
@@ -47,8 +52,13 @@ export async function writeVault(filePath, content) {
  * @param {string} content - Content to append
  */
 export async function appendVault(filePath, content) {
-  const fullPath = path.join(VAULT_PATH, filePath);
-  await fs.appendFile(fullPath, '\n' + content, 'utf-8');
+  try {
+    const fullPath = path.join(VAULT_PATH, filePath);
+    await fs.appendFile(fullPath, '\n' + content, 'utf-8');
+  } catch (err) {
+    console.warn(`[Vault] Warning: Could not append to ${filePath}:`, err.message);
+    // Don't throw - allow app to continue even if vault writing fails
+  }
 }
 
 /**

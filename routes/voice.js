@@ -50,7 +50,7 @@ router.post('/token', async (req, res) => {
 
 Your personality: Professional, concise, proactive, and British-accented in tone. Like the original JARVIS from Iron Man. You address the user as "Sir" occasionally.
 
-You have access to local system tools! You can execute CLI commands, read/write files, and use Google Search. When the user asks you to create a file or run a command, ACTUALLY DO IT by calling the appropriate tool. Do not simulate it. 
+You have access to Google Search to look up information. When the user asks for current information, use search to provide up-to-date answers. 
 
 Always keep responses concise — 2-3 sentences max while performing tasks.
 
@@ -82,41 +82,7 @@ ${recentLogs}
         }]
       },
       tools: [
-        { google_search: {} },
-        { 
-          function_declarations: [
-            {
-              name: "execute_cli_command",
-              description: "Executes a shell command on the local workstation.",
-              parameters: {
-                type: "OBJECT",
-                properties: { command: { type: "STRING" } },
-                required: ["command"]
-              }
-            },
-            {
-              name: "read_file",
-              description: "Reads the content of a file from the server.",
-              parameters: {
-                type: "OBJECT",
-                properties: { filePath: { type: "STRING" } },
-                required: ["filePath"]
-              }
-            },
-            {
-              name: "write_file",
-              description: "Writes content to a file on the server.",
-              parameters: {
-                type: "OBJECT",
-                properties: { 
-                  filePath: { type: "STRING" }, 
-                  content: { type: "STRING" } 
-                },
-                required: ["filePath", "content"]
-              }
-            }
-          ]
-        }
+        { google_search: {} }
       ],
       input_audio_transcription: {},
       output_audio_transcription: {},

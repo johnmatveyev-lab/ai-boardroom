@@ -129,14 +129,21 @@
 
         <!-- Input Area -->
         <div class="input-area">
+          <!-- File Preview Chips (above textarea, hidden by default) -->
+          <div class="file-chips" id="fileChips" hidden></div>
           <div class="input-wrapper">
             <div class="input-role" id="inputRole" title="Click to change active agent">
               <span class="role-dot" data-role="jarvis"></span>
               <span class="role-name">JARVIS</span>
             </div>
-            <textarea 
-              id="chatInput" 
-              placeholder="Give the Board a directive..." 
+            <button class="attach-btn" id="attachBtn" title="Attach files">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
+            <textarea
+              id="chatInput"
+              placeholder="Give the Board a directive..."
               rows="1"
               autofocus
             ></textarea>
@@ -230,6 +237,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Hidden File Input -->
+  <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.webp,.gif,.pdf,.txt,.md,.csv,.docx" hidden>
 
   <!-- Voice Mode Floating Widget -->
   <div class="voice-widget" id="voiceWidget" hidden>
@@ -430,7 +440,8 @@
     import { initMindMap } from '/js/mindmap.js';
     import { initCanvas } from '/js/canvas.js';
     import { initNotepad } from '/js/notepad.js';
-    
+    import { initUpload } from '/js/upload.js';
+
     document.getElementById('mindMapBtn').addEventListener('click', () => {
       const modal = document.getElementById('mindMapModal');
       modal.hidden = false;
@@ -454,6 +465,9 @@
 
     // Vault Notepad
     initNotepad();
+
+    // File Upload
+    initUpload();
   </script>
 </body>
 </html>

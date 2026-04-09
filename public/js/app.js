@@ -420,3 +420,7 @@ function escapeHtml(text) {
 
 // ── Boot ────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
+
+// ── Upload Integration Hook ─────────────────────────────────────────────────
+// Expose internals for upload.js (ES module) to access
+window.__boardroom = { state, appendMessage, showTyping, removeTyping, scrollToBottom };

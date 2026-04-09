@@ -2108,6 +2108,128 @@ body {
   background: #12151e;
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+   FILE UPLOAD SYSTEM
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Attach Button ───────────────────────────────────────────────────────── */
+.attach-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s var(--ease-out);
+}
+
+.attach-btn:hover {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.attach-btn.has-files {
+  border-color: var(--accent-blue);
+  color: white;
+  background: var(--accent-blue);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+/* ── File Chips ──────────────────────────────────────────────────────────── */
+.file-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+}
+
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  max-width: 200px;
+  transition: border-color 0.2s;
+}
+
+.file-chip:hover {
+  border-color: var(--border-hover);
+}
+
+.file-chip-icon {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.file-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.file-chip-size {
+  color: var(--text-tertiary);
+  font-size: 0.62rem;
+  flex-shrink: 0;
+}
+
+.file-chip-remove {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 0.85rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.file-chip-remove:hover {
+  color: var(--accent-rose);
+}
+
+/* ── Upload Progress Bar ─────────────────────────────────────────────────── */
+.upload-progress {
+  height: 2px;
+  background: var(--bg-elevated);
+  border-radius: 1px;
+  overflow: hidden;
+  margin: 6px 4px 0;
+}
+
+.upload-progress-bar {
+  height: 100%;
+  background: var(--gradient-jarvis);
+  border-radius: 1px;
+  width: 0%;
+  transition: width 0.3s var(--ease-out);
+  animation: upload-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes upload-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 .canvas-edit-actions {
   display: flex;
   flex-direction: column;

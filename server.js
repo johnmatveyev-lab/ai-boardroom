@@ -10,11 +10,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { mkdir } from 'fs/promises';
 import chatRoutes from './routes/chat.js';
 import voiceRoutes from './routes/voice.js';
 import toolsRoutes from './routes/tools.js';
 import vaultRoutes from './routes/vault.js';
 import canvasRoutes from './routes/canvas.js';
+import uploadRoutes from './routes/upload.js';
 import { logSystemEvent } from './utils/vault.js';
 
 dotenv.config({ quiet: true });
@@ -36,6 +38,10 @@ app.use('/api/voice', voiceRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/canvas', canvasRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// ── Static File Serving ──────────────────────────────────────────────────────
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 // ── SPA Fallback ────────────────────────────────────────────────────────────
 app.get('/{*splat}', (req, res) => {
@@ -72,6 +78,9 @@ app.listen(PORT, async () => {
   console.log('');
 
   try {
+    // Ensure uploads directory exists
+    await mkdir(join(__dirname, 'uploads'), { recursive: true });
+
     await logSystemEvent('system', 'SERVER_START', `AI Boardroom server started on port ${PORT}`);
   } catch (e) {
     // Vault log is non-critical

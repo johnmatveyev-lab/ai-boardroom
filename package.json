@@ -1,0 +1,29 @@
+{
+  "name": "ai-boardroom",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "multi-agent",
+    "autonomous",
+    "boardroom"
+  ],
+  "author": "",
+  "license": "ISC",
+  "description": "AI Boardroom — A production multi-agent platform where autonomous AI agents build, deploy, and test real software",
+  "dependencies": {
+    "@google/genai": "^1.49.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2",
+    "ws": "^8.20.0"
+  }
+}

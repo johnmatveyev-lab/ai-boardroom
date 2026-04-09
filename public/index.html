@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Boardroom — JARVIS Interface</title>
+  <meta name="description" content="AI Boardroom: A production multi-agent platform where autonomous AI agents build, deploy, and test real software.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Ambient background -->
+  <div class="ambient-bg">
+    <div class="ambient-orb ambient-orb--1"></div>
+    <div class="ambient-orb ambient-orb--2"></div>
+    <div class="ambient-orb ambient-orb--3"></div>
+  </div>
+  <div class="scan-line"></div>
+
+  <div id="app">
+    <!-- ── Header ────────────────────────────────────────── -->
+    <header id="header">
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="28" height="28" rx="6" stroke="currentColor" stroke-width="1.5" opacity="0.6"/>
+              <path d="M8 16H24M16 8V24M10 10L22 22M22 10L10 22" stroke="currentColor" stroke-width="1.2" opacity="0.3"/>
+              <circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="logo-title">AI BOARDROOM</span>
+            <span class="logo-subtitle">Production Agent Platform</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-indicator" id="statusIndicator">
+          <span class="status-dot"></span>
+          <span class="status-text">Initializing</span>
+        </div>
+        <button class="header-btn" id="boardBtn" title="Board of Directors">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+            <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Main Content ──────────────────────────────────── -->
+    <main id="main">
+      <!-- Board Panel (Sidebar) -->
+      <aside class="board-panel" id="boardPanel">
+        <div class="panel-header">
+          <h2>Board of Directors</h2>
+          <button class="panel-close" id="panelClose">&times;</button>
+        </div>
+        <div class="board-members" id="boardMembers">
+          <!-- Populated by JS -->
+        </div>
+      </aside>
+
+      <!-- Chat Area -->
+      <div class="chat-container">
+        <!-- Messages -->
+        <div class="messages" id="messages">
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-orb">
+              <div class="orb-ring orb-ring--1"></div>
+              <div class="orb-ring orb-ring--2"></div>
+              <div class="orb-ring orb-ring--3"></div>
+              <div class="orb-core"></div>
+            </div>
+            <h1>Good <span id="greeting"></span>, Sir.</h1>
+            <p class="welcome-sub">JARVIS online. The Board is assembled and awaiting your directive.</p>
+            <div class="quick-actions">
+              <button class="quick-action" data-prompt="Give me a status report on the system">
+                <span class="qa-icon">📊</span>
+                <span>System Status</span>
+              </button>
+              <button class="quick-action" data-prompt="Who is on the Board of Directors and what are their capabilities?">
+                <span class="qa-icon">👥</span>
+                <span>Meet the Board</span>
+              </button>
+              <button class="quick-action" data-prompt="Generate an MVP for a new SaaS application">
+                <span class="qa-icon">🚀</span>
+                <span>Build an MVP</span>
+              </button>
+              <button class="quick-action" data-prompt="Analyze the current market for AI developer tools">
+                <span class="qa-icon">🔍</span>
+                <span>Market Research</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+          <div class="input-wrapper">
+            <div class="input-role" id="inputRole" title="Click to change active agent">
+              <span class="role-dot" data-role="jarvis"></span>
+              <span class="role-name">JARVIS</span>
+            </div>
+            <textarea 
+              id="chatInput" 
+              placeholder="Give the Board a directive..." 
+              rows="1"
+              autofocus
+            ></textarea>
+            <button class="voice-btn" id="voiceBtn" title="Voice Mode — Talk to JARVIS">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+              <div class="voice-pulse"></div>
+            </button>
+            <button class="send-btn" id="sendBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="input-meta">
+            <span class="meta-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
+            <span class="meta-model" id="metaModel"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Role Selector Dropdown -->
+  <div class="role-selector" id="roleSelector" hidden>
+    <div class="role-option" data-role="jarvis">
+      <span class="role-dot" data-role="jarvis"></span>
+      <div>
+        <strong>JARVIS</strong>
+        <small>Chief of Staff — Routes & manages</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="architect">
+      <span class="role-dot" data-role="architect"></span>
+      <div>
+        <strong>The Architect</strong>
+        <small>CEO — Strategy & system design</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="coder">
+      <span class="role-dot" data-role="coder"></span>
+      <div>
+        <strong>The Coder</strong>
+        <small>CTO — Engineering & deployment</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="creative">
+      <span class="role-dot" data-role="creative"></span>
+      <div>
+        <strong>The Creative</strong>
+        <small>CMO — Design & marketing</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="analyst">
+      <span class="role-dot" data-role="analyst"></span>
+      <div>
+        <strong>The Analyst</strong>
+        <small>CFO — Research & data</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Voice Mode Floating Widget -->
+  <div class="voice-widget" id="voiceWidget" hidden>
+    <div class="voice-widget-header">
+      <div class="voice-widget-title">JARVIS LIVE API</div>
+      <div class="voice-widget-controls">
+        <button class="voice-control-btn" id="voiceMinimizeBtn" title="Minimize/Expand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 15l-7-7-7 7"/>
+          </svg>
+        </button>
+        <button class="voice-control-btn" id="voiceStopBtn" title="Disconnect">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <div class="voice-widget-body" id="voiceWidgetBody">
+      <div class="voice-orb">
+        <div class="voice-orb-ring voice-orb-ring--1"></div>
+        <div class="voice-orb-ring voice-orb-ring--2"></div>
+        <div class="voice-orb-ring voice-orb-ring--3"></div>
+        <div class="voice-orb-core">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="voice-status" id="voiceIndicator">Click mic to start</div>
+    </div>
+    
+    <div class="voice-transcript" id="voiceTranscript"></div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script src="/js/voice.js"></script>
+</body>
+</html>

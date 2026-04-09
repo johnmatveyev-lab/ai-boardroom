@@ -27,6 +27,10 @@ let dragging = null;  // { nodeId, startX, startY, origX, origY }
 let panning = false;
 let panStart = null;
 
+// Persistence
+let isDirty = false;
+let saveTimer = null;
+
 // DOM refs
 let world, nodeLayer, svgEl, viewport;
 let editDrawer, editTitleInput, editDescInput, editTypeSelect, editStatusSelect;
@@ -80,10 +84,80 @@ export function initCanvas() {
   loadFromServer();
 }
 
+function markDirty() {
+  isDirty = true;
+}
+
+function clearDirty() {
+  isDirty = false;
+}
+
+function scheduleSave() {
+  if (!isDirty) return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    saveStateToServer();
+  }, 900);
+}
+
+function getCanvasState() {
+  return {
+    nodes,
+    edges,
+    pan,
+    zoom,
+  };
+}
+
+function applyCanvasState(state) {
+  nodes = Array.isArray(state.nodes) ? state.nodes : [];
+  edges = Array.isArray(state.edges) ? state.edges : [];
+  if (state.pan && typeof state.pan.x === 'number' && typeof state.pan.y === 'number') pan = state.pan;
+  if (typeof state.zoom === 'number') zoom = state.zoom;
+}
+
+async function loadStateFromServer() {
+  const res = await fetch('/api/canvas/state');
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => null);
+  if (!data || !data.exists || !data.state) return null;
+  return data.state;
+}
+
+async function saveStateToServer() {
+  if (!isDirty) return;
+  setStatus('Saving canvas…', '');
+  try {
+    const res = await fetch('/api/canvas/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(getCanvasState()),
+    });
+    if (!res.ok) throw new Error('Save failed');
+    clearDirty();
+    setStatus('Canvas saved', 'Saved to Obsidian vault');
+    setTimeout(() => setStatus('Select mode — click a node to select it', 'Double-click a node to edit it'), 800);
+  } catch (err) {
+    setStatus('Canvas save failed', 'Check server logs and try again');
+  }
+}
+
 // ── Server Load ───────────────────────────────────────────────────────────────
 async function loadFromServer() {
   try {
     setStatus('Loading boardroom data...', '');
+
+    // Prefer persisted state
+    const state = await loadStateFromServer().catch(() => null);
+    if (state && Array.isArray(state.nodes) && Array.isArray(state.edges) && state.nodes.length) {
+      applyCanvasState(state);
+      renderAll();
+      applyTransform();
+      setStatus(`Loaded saved canvas — ${nodes.length} nodes, ${edges.length} connections`, 'Edits auto-save to the vault');
+      clearDirty();
+      return;
+    }
+
     const res = await fetch('/api/canvas/diagram');
     const data = await res.json();
 
@@ -119,6 +193,7 @@ async function loadFromServer() {
 
     renderAll();
     fitToScreen();
+    clearDirty();
     setStatus(`Loaded ${nodes.length} nodes, ${edges.length} connections`, 'Double-click a node to edit');
   } catch (err) {
     console.error('[Canvas] Load failed:', err);
@@ -378,6 +453,8 @@ function onDragEnd(e) {
     const el = document.getElementById(`node-${dragging.nodeId}`);
     if (el) el.style.cursor = '';
     dragging = null;
+    markDirty();
+    scheduleSave();
   }
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup', onDragEnd);
@@ -428,6 +505,8 @@ function finishConnection(targetId) {
     if (!exists) {
       edges.push({ id: genEdgeId(), from: connectSource, to: targetId });
       renderEdges();
+      markDirty();
+      scheduleSave();
       setStatus(`Connected "${getNode(connectSource)?.title}" → "${getNode(targetId)?.title}"`, 'Double-click an edge to remove it');
     }
   }
@@ -518,9 +597,12 @@ function bindToolbar() {
     if (confirm('Clear the entire canvas?')) {
       nodes = []; edges = [];
       renderAll();
+      markDirty();
+      scheduleSave();
       setStatus('Canvas cleared', 'Add nodes with the toolbar buttons');
     }
   });
+  document.getElementById('toolSaveServer').addEventListener('click', saveStateToServer);
   document.getElementById('toolLoadServer').addEventListener('click', loadFromServer);
 
   document.getElementById('toolZoomIn').addEventListener('click',  () => { zoom = Math.min(3, zoom * 1.2); applyTransform(); });
@@ -564,6 +646,8 @@ function addNode(type, x, y) {
   renderEdges();
   selectNode(n.id);
   openEditDrawer(n.id);
+  markDirty();
+  scheduleSave();
   setStatus(`Created new ${cfg.label} node`, 'Edit the title and description in the drawer');
 }
 
@@ -572,12 +656,16 @@ function deleteNode(id) {
   edges = edges.filter(e => e.from !== id && e.to !== id);
   if (selectedNodeId === id) { selectedNodeId = null; closeEditDrawer(); }
   renderAll();
+  markDirty();
+  scheduleSave();
   setStatus('Node deleted', '');
 }
 
 function deleteEdge(id) {
   edges = edges.filter(e => e.id !== id);
   renderEdges();
+  markDirty();
+  scheduleSave();
   setStatus('Connection removed', '');
 }
 
@@ -627,6 +715,8 @@ function saveEditDrawer() {
   document.getElementById('canvasEditTitle').textContent = `Edit — ${n.title}`;
   renderNodes();
   renderEdges();
+  markDirty();
+  scheduleSave();
   setStatus(`Saved changes to "${n.title}"`, '');
 }
 
@@ -647,6 +737,12 @@ function bindEditDrawer() {
 function bindKeyboard() {
   document.addEventListener('keydown', (e) => {
     if (!document.getElementById('canvasModal') || document.getElementById('canvasModal').hidden) return;
+    const isSave = (e.key === 's' || e.key === 'S') && (e.metaKey || e.ctrlKey);
+    if (isSave) {
+      e.preventDefault();
+      saveStateToServer();
+      return;
+    }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     if (e.key === 'v' || e.key === 'V') setMode('select');

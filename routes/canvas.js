@@ -2,9 +2,11 @@ import { Router } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { BOARD_MODELS } from '../utils/llm_router.js';
+import { readVault, writeVault, logSystemEvent } from '../utils/vault.js';
 
 const router = Router();
 const BASE_PATH = path.resolve(process.cwd());
+const CANVAS_STATE_FILE = '02_canvas_state.json';
 
 router.get('/diagram', async (req, res) => {
   const nodes = [];
@@ -68,6 +70,39 @@ router.get('/diagram', async (req, res) => {
   }
 
   res.json({ nodes, links });
+});
+
+router.get('/state', async (req, res) => {
+  try {
+    const raw = await readVault(CANVAS_STATE_FILE);
+    const state = JSON.parse(raw);
+    res.json({ exists: true, state });
+  } catch (err) {
+    res.json({ exists: false });
+  }
+});
+
+router.post('/state', async (req, res) => {
+  try {
+    const state = req.body;
+    if (!state || typeof state !== 'object') {
+      return res.status(400).json({ error: 'Missing canvas state body' });
+    }
+    if (!Array.isArray(state.nodes) || !Array.isArray(state.edges)) {
+      return res.status(400).json({ error: 'State must include nodes[] and edges[]' });
+    }
+
+    const toWrite = JSON.stringify(
+      { version: 1, updatedAt: new Date().toISOString(), ...state },
+      null,
+      2
+    );
+    await writeVault(CANVAS_STATE_FILE, toWrite);
+    await logSystemEvent('system', 'CANVAS_STATE_SAVE', `Saved ${state.nodes.length} nodes, ${state.edges.length} edges`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;

@@ -1612,7 +1612,13 @@ body {
   border-bottom: 1px solid rgba(255,255,255,0.07);
   backdrop-filter: blur(24px);
   flex-shrink: 0;
-  z-index: 10;
+  z-index: 40;
+}
+
+/* Keep status readable/interactive above drawers */
+.canvas-statusbar {
+  position: relative;
+  z-index: 35;
 }
 
 .canvas-toolbar-left,

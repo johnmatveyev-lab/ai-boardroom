@@ -1369,6 +1369,217 @@ body {
   animation: pulse 1.5s infinite;
 }
 
+/* ── Vault Notepad Modal ─────────────────────────────────────────────────── */
+.notepad-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 12, 0.92);
+  backdrop-filter: blur(12px);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notepad-modal[hidden] {
+  display: none !important;
+}
+
+.notepad-header {
+  height: 56px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(13, 15, 22, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.notepad-header h2 {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-primary);
+}
+
+.notepad-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notepad-status {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+.notepad-status[data-type="ok"] { color: var(--accent-emerald); }
+.notepad-status[data-type="error"] { color: var(--accent-rose); }
+
+.notepad-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 0;
+}
+
+.notepad-sidebar {
+  border-right: 1px solid var(--border-subtle);
+  background: rgba(13, 15, 22, 0.85);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.notepad-sidebar-top {
+  padding: 14px 14px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notepad-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.notepad-refresh {
+  width: 34px;
+  height: 30px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
+}
+.notepad-refresh:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border-hover);
+}
+
+.notepad-files {
+  padding: 8px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.notepad-file {
+  width: 100%;
+  text-align: left;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  transition: background 0.15s var(--ease-out), border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
+}
+.notepad-file:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.06);
+  color: var(--text-primary);
+}
+.notepad-file.active {
+  background: rgba(6,182,212,0.08);
+  border-color: rgba(6,182,212,0.25);
+  color: var(--text-primary);
+}
+
+.notepad-empty {
+  padding: 14px 10px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.notepad-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.notepad-toolbar {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(13, 15, 22, 0.55);
+}
+
+.notepad-path {
+  flex: 1;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--border-default);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-primary);
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  outline: none;
+}
+.notepad-path:focus {
+  border-color: rgba(6,182,212,0.35);
+  box-shadow: 0 0 0 4px rgba(6,182,212,0.08);
+}
+
+.notepad-btn {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-default);
+  background: rgba(255,255,255,0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+}
+.notepad-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+.notepad-btn--primary {
+  background: rgba(6,182,212,0.12);
+  border-color: rgba(6,182,212,0.3);
+  color: var(--text-primary);
+}
+.notepad-btn--primary:hover {
+  background: rgba(6,182,212,0.18);
+  border-color: rgba(6,182,212,0.45);
+}
+
+.notepad-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.notepad-hint {
+  padding: 10px 14px 14px;
+  color: var(--text-tertiary);
+  font-size: 0.72rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(13, 15, 22, 0.35);
+}
+
 /* ════════════════════════════════════════════════════════════════════════════
    INTERACTIVE NODE CANVAS
    ════════════════════════════════════════════════════════════════════════════ */

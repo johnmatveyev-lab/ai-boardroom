@@ -1,21 +1,20 @@
 /**
- * llm_router.js — OpenRouter LLM Connection
+ * llm_router.js — Gemini 3 API Connection (Primary) with OpenRouter Fallback
  * 
- * Routes prompts to different models based on which Board Member is speaking.
- * All inference passes through OpenRouter for model agnosticism.
+ * Routes prompts to different Gemini models based on which Board Member is speaking.
+ * Grants specialized tools (Computer Use, Search Grounding) depending on the role.
  */
 
+import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 // ── Board Member Model Configuration ────────────────────────────────────────
-// Each board member gets a model tuned for their role.
-// These can be overridden via environment variables.
-
 const BOARD_MODELS = {
   jarvis: {
-    model: process.env.MODEL_JARVIS || 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    model: process.env.MODEL_JARVIS || 'gemini-3.1-pro-preview',
+    fallbackModel: 'nvidia/llama-3.1-nemotron-70b-instruct:free',
     description: 'Chief of Staff — fast, conversational, task routing',
     systemPrompt: `You are JARVIS, the Chief of Staff of AI Boardroom — a real production platform where autonomous AI agents build, deploy, and test real software. You are the sole interface between the human stakeholder and the Board of Directors.
 
@@ -29,11 +28,12 @@ Your responsibilities:
 
 When the user gives a directive, identify which Board Member(s) should handle it and explain your delegation plan.`,
     temperature: 0.7,
-    maxTokens: 2048,
+    tools: [] // Voice tools handled separately in voice.js
   },
 
   architect: {
-    model: process.env.MODEL_CEO || 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    model: process.env.MODEL_CEO || 'gemini-3.1-pro-preview',
+    fallbackModel: 'anthropic/claude-3-opus:beta',
     description: 'CEO / Architect — high-level strategy, system design, project planning',
     systemPrompt: `You are The Architect, the CEO of AI Boardroom. You handle high-level strategy and system design.
 
@@ -45,11 +45,12 @@ Your responsibilities:
 
 You think in systems. Every decision must be justified with clear reasoning. Output structured plans, not vague ideas.`,
     temperature: 0.6,
-    maxTokens: 4096,
+    tools: [{ googleSearch: {} }]
   },
 
   coder: {
-    model: process.env.MODEL_CTO || 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    model: process.env.MODEL_CTO || 'gemini-3.1-pro-preview',
+    fallbackModel: 'anthropic/claude-3.5-sonnet:beta',
     description: 'CTO / Coder — engineering, implementation, deployment',
     systemPrompt: `You are The Coder, the CTO of AI Boardroom. You handle all engineering and implementation.
 
@@ -61,11 +62,12 @@ Your responsibilities:
 
 You write clean, well-documented, tested code. You deploy. You don't suggest — you build.`,
     temperature: 0.3,
-    maxTokens: 8192,
+    tools: [{ codeExecution: {} }]
   },
 
   creative: {
-    model: process.env.MODEL_CMO || 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    model: process.env.MODEL_CMO || 'gemini-3.1-flash-preview',
+    fallbackModel: 'google/gemini-pro-1.5',
     description: 'CMO / Creative — design, copywriting, marketing, branding',
     systemPrompt: `You are The Creative, the CMO of AI Boardroom. You handle all design, copywriting, and marketing.
 
@@ -77,11 +79,12 @@ Your responsibilities:
 
 You think visually. Your output should be specific and implementable — color codes, font choices, spacing, hierarchy.`,
     temperature: 0.9,
-    maxTokens: 4096,
+    tools: [{ googleSearch: {} }]
   },
 
   analyst: {
-    model: process.env.MODEL_CFO || 'nvidia/llama-3.1-nemotron-70b-instruct:free',
+    model: process.env.MODEL_CFO || 'gemini-3.1-flash-lite-preview',
+    fallbackModel: 'meta-llama/llama-3-70b-instruct',
     description: 'CFO / Analyst — research, data, fact-checking, market analysis',
     systemPrompt: `You are The Analyst, the CFO/Researcher of AI Boardroom. You handle data gathering, market research, and fact-checking.
 
@@ -93,23 +96,84 @@ Your responsibilities:
 
 You are precise. You cite sources. You challenge assumptions with data.`,
     temperature: 0.4,
-    maxTokens: 4096,
+    tools: [{ googleSearch: {} }]
+  },
+
+  product: {
+    model: 'gemini-3.1-pro-preview',
+    fallbackModel: 'anthropic/claude-3-haiku',
+    description: 'CPO / Product Manager — roadmaps, requirements, user stories',
+    systemPrompt: `You are The Product Manager, the CPO of AI Boardroom. You own the product roadmap and user experience.
+
+Your responsibilities:
+- Translate the Architect's high-level specs into actionable User Stories and requirements
+- Prioritize features based on user value and feasibility
+- Define the "Definition of Done" for all tasks
+- Bridge the gap between business strategy and engineering implementation
+
+You are the voice of the user. You ensure we build the right thing, not just anything.`,
+    temperature: 0.7,
+    tools: [{ googleSearch: {} }]
+  },
+
+  devops: {
+    model: 'gemini-3.1-pro-preview',
+    fallbackModel: 'meta-llama/llama-3.1-405b-instruct',
+    description: 'Head of Infrastructure — CI/CD, deployment, cloud scaling',
+    systemPrompt: `You are The DevOps Lead, responsible for the infrastructure of AI Boardroom.
+
+Your responsibilities:
+- Manage CI/CD pipelines and deployment workflows (Vercel, AWS, Docker)
+- Monitor system health, latency, and performance metrics
+- Optimize the local development environment and server configurations
+- Ensure zero-downtime deployments and system reliability
+
+You think in pipelines and scale. You move fast but ensure the foundation is unbreakable.`,
+    temperature: 0.2,
+    tools: [{ codeExecution: {} }]
+  },
+
+  security: {
+    model: 'gemini-3.1-flash-preview',
+    fallbackModel: 'meta-llama/llama-3.1-70b-instruct:free',
+    description: 'CISO / Security Officer — audits, encryption, auth hardening',
+    systemPrompt: `You are The Security Officer, the CISO of AI Boardroom. You are the guardian of the platform.
+
+Your responsibilities:
+- Perform security audits on every code block produced by the team
+- Enforce strict authentication, encryption, and data privacy standards
+- Identify and patch vulnerabilities (XSS, SQLi, CSRF, etc.)
+- Ensure compliance with the highest security protocols
+
+You are paranoid in the best way. Safety and trust are your only metrics.`,
+    temperature: 0.1,
+    tools: [{ googleSearch: {} }]
+  },
+
+  qa: {
+    model: 'gemini-3.1-flash-preview',
+    fallbackModel: 'google/gemini-flash-1.5',
+    description: 'Chief Quality Officer — testing, bug hunting, UX validation',
+    systemPrompt: `You are The QA Lead, the Chief Quality Officer of AI Boardroom. 
+
+Your responsibilities:
+- Simulate end-user behavior to find UX friction points
+- Write and execute end-to-end (E2E) and integration tests
+- Perform edge-case stress testing on all new features
+- Reject any implementation that does not meet the "Definition of Done"
+
+You are the final gate. If it's not perfect, it doesn't ship.`,
+    temperature: 0.5,
+    tools: [{ codeExecution: {} }]
   },
 };
+
+const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }) : null;
 
 // ── Core Router Function ────────────────────────────────────────────────────
 
 /**
- * Routes a prompt to the appropriate LLM via OpenRouter.
- * 
- * @param {Object} options
- * @param {string} options.prompt - The user/system prompt to send
- * @param {string} options.role - Board member role key (jarvis, architect, coder, creative, analyst)
- * @param {Array} [options.messages] - Full message history (overrides prompt if provided)
- * @param {string} [options.model] - Override model for this specific call
- * @param {number} [options.temperature] - Override temperature
- * @param {number} [options.maxTokens] - Override max tokens
- * @returns {Promise<{content: string, model: string, role: string, usage: Object}>}
+ * Routes a prompt to the appropriate LLM via Gemini 3 API (Primary) or OpenRouter (Fallback).
  */
 export async function routeToLLM({
   prompt,
@@ -117,120 +181,115 @@ export async function routeToLLM({
   messages = null,
   model = null,
   temperature = null,
-  maxTokens = null,
 }) {
   const boardMember = BOARD_MODELS[role];
   if (!boardMember) {
     throw new Error(`Unknown board member role: "${role}". Valid roles: ${Object.keys(BOARD_MODELS).join(', ')}`);
   }
 
-  // Build the message array
+  // 1. Try Gemini Native API using @google/genai
+  if (ai) {
+    try {
+      const contents = buildGeminiContents(prompt, messages);
+      const config = {
+        systemInstruction: boardMember.systemPrompt,
+        temperature: temperature ?? 1.0, // Gemini 3 docs highly recommend 1.0
+      };
+      
+      if (boardMember.tools && boardMember.tools.length > 0) {
+        config.tools = boardMember.tools;
+      }
+
+      const m = model || boardMember.model;
+
+      const response = await ai.models.generateContent({
+        model: m,
+        contents: contents,
+        config: config
+      });
+
+      return {
+        content: response.text || '',
+        model: m,
+        role: role,
+        boardMember: boardMember.description,
+        usage: {},
+      };
+    } catch (err) {
+      console.warn(`[LLM] Gemini API failed: ${err.message}, falling back to OpenRouter...`);
+    }
+  } else {
+    console.warn(`[LLM] GEMINI_API_KEY missing, attempting OpenRouter...`);
+  }
+
+  // 2. OpenRouter Fallback
+  return await routeViaOpenRouter({ prompt, messages, boardMember, role, temperature, model });
+}
+
+function buildGeminiContents(prompt, messages) {
+  if (messages) {
+    return messages.filter(m => m.role !== 'system').map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+  }
+  return [{
+    role: 'user',
+    parts: [{ text: prompt }]
+  }];
+}
+
+async function routeViaOpenRouter({ prompt, messages, boardMember, role, temperature, model }) {
+  const openRouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openRouterKey) {
+    throw new Error('Neither GEMINI_API_KEY nor OPENROUTER_API_KEY is working. Check your .env file.');
+  }
+
   const requestMessages = messages || [
     { role: 'system', content: boardMember.systemPrompt },
     { role: 'user', content: prompt },
   ];
 
-  // If messages are provided but don't have a system prompt, prepend one
   if (messages && messages[0]?.role !== 'system') {
     requestMessages.unshift({ role: 'system', content: boardMember.systemPrompt });
   }
 
-  // Try OpenRouter first
-  const openRouterKey = process.env.OPENROUTER_API_KEY;
-  if (openRouterKey) {
-    try {
-      const requestBody = {
-        model: model || boardMember.model,
-        messages: requestMessages,
-        temperature: temperature ?? boardMember.temperature,
-        max_tokens: maxTokens ?? boardMember.maxTokens,
-      };
+  const m = model || boardMember.fallbackModel;
+  const temp = temperature ?? boardMember.temperature;
 
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openRouterKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://boardme.ai',
-          'X-Title': 'AI Boardroom',
-        },
-        body: JSON.stringify(requestBody),
-      });
+  const requestBody = {
+    model: m,
+    messages: requestMessages,
+    temperature: temp,
+  };
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.choices?.[0]?.message?.content) {
-          return {
-            content: data.choices[0].message.content,
-            model: data.model || requestBody.model,
-            role: role,
-            boardMember: boardMember.description,
-            usage: data.usage || {},
-          };
-        }
-      }
-      console.warn(`[LLM] OpenRouter returned ${response.status}, falling back to Gemini...`);
-    } catch (err) {
-      console.warn(`[LLM] OpenRouter failed: ${err.message}, falling back to Gemini...`);
-    }
-  }
-
-  // Fallback: Use Gemini API directly
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
-    throw new Error('Neither OPENROUTER_API_KEY nor GEMINI_API_KEY is working. Check your .env file.');
-  }
-
-  return await routeViaGemini({ requestMessages, boardMember, role, temperature, maxTokens, geminiKey });
-}
-
-/**
- * Direct Gemini API fallback route.
- */
-async function routeViaGemini({ requestMessages, boardMember, role, temperature, maxTokens, geminiKey }) {
-  const geminiModel = 'gemini-2.0-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`;
-
-  // Convert OpenAI-style messages to Gemini format
-  const systemInstruction = requestMessages.find(m => m.role === 'system')?.content || '';
-  const contents = requestMessages
-    .filter(m => m.role !== 'system')
-    .map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
-
-  const response = await fetch(url, {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined,
-      contents,
-      generationConfig: {
-        temperature: temperature ?? boardMember.temperature,
-        maxOutputTokens: maxTokens ?? boardMember.maxTokens,
-      }
-    }),
+    headers: {
+      'Authorization': `Bearer ${openRouterKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://boardme.ai',
+      'X-Title': 'AI Boardroom',
+    },
+    body: JSON.stringify(requestBody),
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`Gemini API error (${response.status}): ${errorBody}`);
+  if (response.ok) {
+    const data = await response.json();
+    if (data.choices?.[0]?.message?.content) {
+      return {
+        content: data.choices[0].message.content,
+        model: data.model || m,
+        role: role,
+        boardMember: boardMember.description,
+        usage: data.usage || {},
+      };
+    }
   }
-
-  const data = await response.json();
-  const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-  return {
-    content,
-    model: `google/${geminiModel}`,
-    role: role,
-    boardMember: boardMember.description,
-    usage: data.usageMetadata || {},
-  };
+  
+  const errText = await response.text();
+  throw new Error(`OpenRouter API error (${response.status}): ${errText}`);
 }
-
-// ── Utility: Get Board Member Info ──────────────────────────────────────────
 
 export function getBoardMembers() {
   return Object.entries(BOARD_MODELS).map(([key, config]) => ({
@@ -240,10 +299,8 @@ export function getBoardMembers() {
   }));
 }
 
-// ── Utility: Identify the right board member for a task ─────────────────────
-
 export async function identifyBoardMember(taskDescription) {
-  const result = await routeToLLM({
+  const response = await routeToLLM({
     prompt: `Analyze this task and determine which ONE board member should handle it. 
     
 Available members:
@@ -251,15 +308,14 @@ ${Object.entries(BOARD_MODELS).map(([k, v]) => `- ${k}: ${v.description}`).join(
 
 Task: "${taskDescription}"
 
-Respond with ONLY the role key (jarvis, architect, coder, creative, or analyst) and a one-sentence justification in this JSON format:
+Respond with ONLY the role key (${Object.keys(BOARD_MODELS).join(', ')}) and a one-sentence justification in this JSON format:
 {"role": "role_key", "reason": "why this member"}`,
     role: 'jarvis',
     temperature: 0.2,
-    maxTokens: 128,
   });
 
   try {
-    return JSON.parse(result.content);
+    return JSON.parse(response.content);
   } catch {
     return { role: 'jarvis', reason: 'Defaulting to Jarvis for routing' };
   }

@@ -12,9 +12,12 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import chatRoutes from './routes/chat.js';
 import voiceRoutes from './routes/voice.js';
+import toolsRoutes from './routes/tools.js';
+import vaultRoutes from './routes/vault.js';
+import canvasRoutes from './routes/canvas.js';
 import { logSystemEvent } from './utils/vault.js';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,6 +33,9 @@ app.use(express.static(join(__dirname, 'public')));
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.use('/api', chatRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api/tools', toolsRoutes);
+app.use('/api/vault', vaultRoutes);
+app.use('/api/canvas', canvasRoutes);
 
 // ── SPA Fallback ────────────────────────────────────────────────────────────
 app.get('/{*splat}', (req, res) => {
@@ -49,13 +55,18 @@ app.listen(PORT, async () => {
   console.log(`  ║  Server:    http://localhost:${PORT}                ║`);
   console.log(`  ║  API:       http://localhost:${PORT}/api/status     ║`);
   console.log(`  ║  API Key:   ${process.env.OPENROUTER_API_KEY ? '✅ Configured' : '⚠️  Not set (demo mode)'}              ║`);
+  console.log(`  ║  Voice:     ${process.env.GEMINI_API_KEY ? '🎙️ Gemini Live Ready' : '⚠️  No GEMINI_API_KEY'}          ║`);
   console.log('  ║                                                  ║');
-  console.log('  ║  Board Members:                                  ║');
+  console.log('  ║  Board Members (9):                              ║');
   console.log('  ║    ◆ Jarvis    — Chief of Staff                  ║');
   console.log('  ║    ◆ Architect — CEO / Strategy                  ║');
   console.log('  ║    ◆ Coder    — CTO / Engineering                ║');
   console.log('  ║    ◆ Creative — CMO / Design                     ║');
   console.log('  ║    ◆ Analyst  — CFO / Research                   ║');
+  console.log('  ║    ◆ Product  — CPO / Roadmap                    ║');
+  console.log('  ║    ◆ DevOps   — SRE / Infrastructure             ║');
+  console.log('  ║    ◆ Security — CISO / Hardening                 ║');
+  console.log('  ║    ◆ QA Lead  — CQO / Testing                    ║');
   console.log('  ║                                                  ║');
   console.log('  ╚══════════════════════════════════════════════════╝');
   console.log('');

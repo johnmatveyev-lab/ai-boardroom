@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  
+  <!-- Force Graph Library for Mind Map -->
+  <script src="https://unpkg.com/force-graph"></script>
 </head>
 <body>
   <!-- Ambient background -->
@@ -43,6 +46,19 @@
           <span class="status-dot"></span>
           <span class="status-text">Initializing</span>
         </div>
+        <button class="header-btn" id="mindMapBtn" title="Obsidian Mind Map">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M3 12h6m6 0h6M12 3v6m0 6v6"></path>
+          </svg>
+        </button>
+        <button class="header-btn" id="canvasBtn" title="Implementation Canvas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+        </button>
         <button class="header-btn" id="boardBtn" title="Board of Directors">
           <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
             <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
@@ -60,6 +76,12 @@
           <button class="panel-close" id="panelClose">&times;</button>
         </div>
         <div class="board-members" id="boardMembers">
+          <!-- Populated by JS -->
+        </div>
+        <div class="panel-header" style="margin-top:20px; border-top: 1px solid var(--border-subtle); padding-top: 20px;">
+          <h2>Live Analytics</h2>
+        </div>
+        <div class="analytics-metrics" id="analyticsMetrics" style="padding: 12px;">
           <!-- Populated by JS -->
         </div>
       </aside>
@@ -172,6 +194,34 @@
         <small>CFO — Research & data</small>
       </div>
     </div>
+    <div class="role-option" data-role="product">
+      <span class="role-dot" data-role="product"></span>
+      <div>
+        <strong>The Product Manager</strong>
+        <small>CPO — Roadmaps & requirements</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="devops">
+      <span class="role-dot" data-role="devops"></span>
+      <div>
+        <strong>The DevOps Lead</strong>
+        <small>Head of Infrastructure — Deployments</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="security">
+      <span class="role-dot" data-role="security"></span>
+      <div>
+        <strong>The Security Officer</strong>
+        <small>CISO — Auditing & hardening</small>
+      </div>
+    </div>
+    <div class="role-option" data-role="qa">
+      <span class="role-dot" data-role="qa"></span>
+      <div>
+        <strong>The QA Lead</strong>
+        <small>CQO — Testing & validation</small>
+      </div>
+    </div>
   </div>
 
   <!-- Voice Mode Floating Widget -->
@@ -210,8 +260,149 @@
     
     <div class="voice-transcript" id="voiceTranscript"></div>
   </div>
+  <!-- Obsidian Mind Map Modal -->
+  <div class="mindmap-modal" id="mindMapModal" hidden>
+    <div class="mindmap-header">
+      <h2>Neural Architecture (Mind Map)</h2>
+      <button class="panel-close" id="mindMapClose">&times;</button>
+    </div>
+    <div id="mindmap-container"></div>
+  </div>
+
+  <!-- Implementation Canvas Modal -->
+  <div class="canvas-modal" id="canvasModal" hidden>
+    <!-- Toolbar -->
+    <div class="canvas-toolbar">
+      <div class="canvas-toolbar-left">
+        <span class="canvas-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          Architecture Canvas
+        </span>
+      </div>
+      <div class="canvas-toolbar-center">
+        <button class="canvas-tool-btn active" id="toolSelect" title="Select & Move (V)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M5 3l14 9-7 1-4 7z"/></svg>
+          Select
+        </button>
+        <button class="canvas-tool-btn" id="toolConnect" title="Connect Nodes (C)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Connect
+        </button>
+        <div class="canvas-tool-sep"></div>
+        <button class="canvas-tool-btn" id="toolAddRole" title="Add Role Node">+ Role</button>
+        <button class="canvas-tool-btn" id="toolAddGate" title="Add Gate Node">+ Gate</button>
+        <button class="canvas-tool-btn" id="toolAddNote" title="Add Note Node">+ Note</button>
+        <button class="canvas-tool-btn" id="toolAddTask" title="Add Task Node">+ Task</button>
+        <div class="canvas-tool-sep"></div>
+        <button class="canvas-tool-btn" id="toolDeleteSelected" title="Delete Selected (Del)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Delete
+        </button>
+        <button class="canvas-tool-btn" id="toolClearAll" title="Clear All">Clear All</button>
+        <div class="canvas-tool-sep"></div>
+        <button class="canvas-tool-btn" id="toolLoadServer" title="Reload from server">↻ Reload</button>
+      </div>
+      <div class="canvas-toolbar-right">
+        <button class="canvas-tool-btn" id="toolZoomOut" title="Zoom Out">−</button>
+        <span class="canvas-zoom-label" id="canvasZoomLabel">100%</span>
+        <button class="canvas-tool-btn" id="toolZoomIn" title="Zoom In">+</button>
+        <button class="canvas-tool-btn" id="toolZoomFit" title="Fit to Screen">Fit</button>
+        <div class="canvas-tool-sep"></div>
+        <button class="panel-close" id="canvasClose">×</button>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="canvas-statusbar" id="canvasStatusBar">
+      <span id="canvasStatusText">Select mode — click nodes to select, drag to move</span>
+      <span class="canvas-status-hint" id="canvasStatusHint">Double-click a node to edit</span>
+    </div>
+
+    <!-- Viewport -->
+    <div class="canvas-viewport" id="canvasViewport">
+      <div class="canvas-world" id="canvasWorld">
+        <!-- SVG for edges -->
+        <svg class="canvas-edges-svg" id="canvasEdgesSvg" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="rgba(99,102,241,0.7)"/>
+            </marker>
+            <marker id="arrowhead-hover" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+            </marker>
+          </defs>
+        </svg>
+        <!-- Nodes are injected here as DOM divs -->
+        <div id="canvasNodes"></div>
+      </div>
+    </div>
+
+    <!-- Node Edit Drawer -->
+    <div class="canvas-edit-drawer" id="canvasEditDrawer" hidden>
+      <div class="canvas-edit-header">
+        <span id="canvasEditTitle">Edit Node</span>
+        <button class="canvas-edit-close" id="canvasEditClose">×</button>
+      </div>
+      <div class="canvas-edit-body">
+        <label class="canvas-edit-label">Title</label>
+        <input class="canvas-edit-input" id="canvasEditNodeTitle" type="text" placeholder="Node title..."/>
+        <label class="canvas-edit-label">Description</label>
+        <textarea class="canvas-edit-textarea" id="canvasEditNodeDesc" placeholder="Add a description..."></textarea>
+        <label class="canvas-edit-label">Type</label>
+        <select class="canvas-edit-select" id="canvasEditNodeType">
+          <option value="core">Core</option>
+          <option value="role">Role</option>
+          <option value="gate">Gate / SOP</option>
+          <option value="task">Task</option>
+          <option value="note">Note</option>
+          <option value="hub">Hub</option>
+        </select>
+        <label class="canvas-edit-label">Status</label>
+        <select class="canvas-edit-select" id="canvasEditNodeStatus">
+          <option value="active">Active</option>
+          <option value="complete">Complete</option>
+          <option value="pending">Pending</option>
+          <option value="blocked">Blocked</option>
+        </select>
+        <div class="canvas-edit-actions">
+          <button class="canvas-edit-save" id="canvasEditSave">Save Changes</button>
+          <button class="canvas-edit-delete" id="canvasEditDelete">Delete Node</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connecting line (drawn while dragging to connect) -->
+    <svg class="canvas-connecting-line" id="canvasConnectingLine" xmlns="http://www.w3.org/2000/svg" style="pointer-events:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:none;">
+      <path id="canvasConnectPath" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,4"/>
+    </svg>
+  </div>
 
   <script src="/js/app.js"></script>
   <script src="/js/voice.js"></script>
+  <script type="module">
+    import { initMindMap } from '/js/mindmap.js';
+    import { initCanvas } from '/js/canvas.js';
+    
+    document.getElementById('mindMapBtn').addEventListener('click', () => {
+      const modal = document.getElementById('mindMapModal');
+      modal.hidden = false;
+      initMindMap();
+    });
+
+    document.getElementById('mindMapClose').addEventListener('click', () => {
+      document.getElementById('mindMapModal').hidden = true;
+    });
+
+    // Implementation Canvas
+    document.getElementById('canvasBtn').addEventListener('click', () => {
+      const modal = document.getElementById('canvasModal');
+      modal.hidden = false;
+      initCanvas();
+    });
+
+    document.getElementById('canvasClose').addEventListener('click', () => {
+      document.getElementById('canvasModal').hidden = true;
+    });
+  </script>
 </body>
 </html>

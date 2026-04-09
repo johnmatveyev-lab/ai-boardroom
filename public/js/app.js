@@ -21,6 +21,10 @@ const ROLE_NAMES = {
   coder: 'The Coder',
   creative: 'The Creative',
   analyst: 'The Analyst',
+  product: 'The Product Manager',
+  devops: 'The DevOps Lead',
+  security: 'The Security Officer',
+  qa: 'The QA Lead',
 };
 
 const ROLE_AVATARS = {
@@ -29,6 +33,10 @@ const ROLE_AVATARS = {
   coder: 'C',
   creative: 'M',
   analyst: 'R',
+  product: 'P',
+  devops: 'D',
+  security: 'S',
+  qa: 'Q',
 };
 
 // ── DOM Elements ────────────────────────────────────────────────────────────
@@ -54,6 +62,10 @@ function init() {
   setupEventListeners();
   checkSystemStatus();
   loadBoardMembers();
+  loadAnalytics();
+
+  // Poll analytics to keep them "live"
+  setInterval(loadAnalytics, 5000);
 }
 
 function setGreeting() {
@@ -139,7 +151,8 @@ async function checkSystemStatus() {
     const res = await fetch('/api/status');
     const data = await res.json();
     statusDot.classList.add('online');
-    statusText.textContent = data.apiKeyConfigured ? 'Online' : 'Demo Mode';
+    const apiKeyConfigured = (data.openRouterConfigured ?? data.apiKeyConfigured) ? true : false;
+    statusText.textContent = apiKeyConfigured ? 'Online' : 'Demo Mode';
   } catch {
     statusText.textContent = 'Offline';
   }
@@ -159,12 +172,62 @@ async function loadBoardMembers() {
   }
 }
 
+async function loadAnalytics() {
+  try {
+    const res = await fetch('/api/vault/analytics');
+    if (!res.ok) return;
+    const { metrics, agentActivity } = await res.json();
+    
+    const analyticsEl = document.getElementById('analyticsMetrics');
+    if (!analyticsEl) return;
+
+    analyticsEl.innerHTML = `
+      <div style="font-size:0.8rem; color:var(--text-secondary); line-height: 1.6;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>System Boot Cycles:</span>
+          <strong style="color:var(--text-primary)">${metrics.serverStarts}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span>Queries Processed:</span>
+          <strong style="color:var(--text-primary)">${metrics.chatQueries}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+          <span>Total Vault Events:</span>
+          <strong style="color:var(--text-primary)">${metrics.totalEvents}</strong>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.05); padding-top:12px;">
+          <div style="margin-bottom:6px; color:var(--text-tertiary); font-size:0.7rem; text-transform:uppercase;">Top Agent Activity</div>
+          ${Object.entries(agentActivity)
+            .sort((a,b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([agent, count]) => `
+              <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                <span>${agent}</span>
+                <strong style="color:var(--accent-cyan)">${count}</strong>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error('Analytics fetch failed', err);
+  }
+}
+
 function renderBoardMembers() {
   boardMembersEl.innerHTML = state.boardMembers.map((member) => `
     <div class="member-card" data-role="${member.role}">
-      <h3>${ROLE_NAMES[member.role] || member.role}</h3>
-      <p>${member.description}</p>
-      <span class="model-tag">${member.model}</span>
+      <div class="member-card-avatar">
+        <img src="/images/${member.role}.png" alt="Avatar for ${member.role}" onerror="this.src='/images/jarvis.png'" />
+      </div>
+      <div class="member-card-content">
+        <h3>${ROLE_NAMES[member.role] || member.role}</h3>
+        <p>${member.description}</p>
+        <div class="member-meta">
+          <span class="model-tag">${member.model}</span>
+          <span class="status-indicator-mini"><span class="status-dot online"></span> Active</span>
+        </div>
+      </div>
     </div>
   `).join('');
 
@@ -251,7 +314,9 @@ function appendMessage(type, content, meta = {}) {
     `;
   } else {
     msgEl.innerHTML = `
-      <div class="msg-avatar msg-avatar--${role}">${ROLE_AVATARS[role] || 'J'}</div>
+      <div class="msg-avatar msg-avatar--${role}">
+        <img src="/images/${role}.png" alt="${ROLE_NAMES[role]}" onerror="this.src='/images/jarvis.png'" />
+      </div>
       <div class="msg-body">
         <div class="msg-header">
           <span class="msg-name">${ROLE_NAMES[role] || role}</span>
@@ -273,7 +338,9 @@ function showTyping() {
   el.className = 'message message--assistant';
   el.id = 'typing-indicator';
   el.innerHTML = `
-    <div class="msg-avatar msg-avatar--${role}">${ROLE_AVATARS[role] || 'J'}</div>
+    <div class="msg-avatar msg-avatar--${role}">
+      <img src="/images/${role}.png" alt="${ROLE_NAMES[role]}" onerror="this.src='/images/jarvis.png'" />
+    </div>
     <div class="msg-body">
       <div class="msg-header">
         <span class="msg-name">${ROLE_NAMES[role]} is thinking...</span>

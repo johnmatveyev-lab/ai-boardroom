@@ -3,11 +3,13 @@
  * 
  * Provides config for Gemini Live API voice sessions.
  * Browser connects directly to Gemini via WebSocket.
+ * 
+ * IMPORTANT: The raw WebSocket protocol uses snake_case JSON keys.
  */
 
 import { Router } from 'express';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const router = Router();
 
@@ -39,44 +41,85 @@ router.post('/token', async (req, res) => {
 
   const wsUrl = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
+  // Build the system prompt with properly escaped newlines
+  const recentLogs = systemLogs
+    ? systemLogs.split('\n').filter(l => l.trim()).slice(-15).join('\n')
+    : 'None documented yet.';
+
+  const systemText = `You are JARVIS, the Chief of Staff of AI Boardroom — a real production platform where autonomous AI agents build, deploy, and test real software.
+
+Your personality: Professional, concise, proactive, and British-accented in tone. Like the original JARVIS from Iron Man. You address the user as "Sir" occasionally.
+
+You have access to local system tools! You can execute CLI commands, read/write files, and use Google Search. When the user asks you to create a file or run a command, ACTUALLY DO IT by calling the appropriate tool. Do not simulate it. 
+
+Always keep responses concise — 2-3 sentences max while performing tasks.
+
+=== SYSTEM MEMORY & TASKS ===
+Active Projects:
+${(activeProjects || '').substring(0, 500) || 'None documented yet.'}
+
+Recent System Logs (Memory):
+${recentLogs}
+=============================`;
+
+  // Setup message uses snake_case for the raw WebSocket protocol
   const setupMessage = {
     setup: {
       model: 'models/gemini-3.1-flash-live-preview',
-      generationConfig: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: 'Kore'
+      generation_config: {
+        response_modalities: ['AUDIO'],
+        speech_config: {
+          voice_config: {
+            prebuilt_voice_config: {
+              voice_name: 'Kore'
             }
           }
         }
       },
-      systemInstruction: {
+      system_instruction: {
         parts: [{
-          text: `You are JARVIS, the Chief of Staff of AI Boardroom — a real production platform where autonomous AI agents build, deploy, and test real software.
-
-Your personality: Professional, concise, proactive, and British-accented in tone. Like the original JARVIS from Iron Man. You address the user as "Sir" occasionally.
-
-Keep responses concise — 2-3 sentences max. Be efficient and professional.
-
-Your Board of Directors:
-- The Architect (CEO) — Strategy & system design
-- The Coder (CTO) — Engineering & deployment 
-- The Creative (CMO) — Design & marketing
-- The Analyst (CFO) — Research & data
-
-=== SYSTEM MEMORY & TASKS ===
-Active Projects:
-${activeProjects.substring(0, 500) || 'None documented yet.'}
-
-Recent System Logs (Memory):
-${systemLogs.split('\\n').slice(-15).join('\\n') || 'None documented yet.'}
-=============================`
+          text: systemText
         }]
       },
-      inputAudioTranscription: {},
-      outputAudioTranscription: {},
+      tools: [
+        { google_search: {} },
+        { 
+          function_declarations: [
+            {
+              name: "execute_cli_command",
+              description: "Executes a shell command on the local workstation.",
+              parameters: {
+                type: "OBJECT",
+                properties: { command: { type: "STRING" } },
+                required: ["command"]
+              }
+            },
+            {
+              name: "read_file",
+              description: "Reads the content of a file from the server.",
+              parameters: {
+                type: "OBJECT",
+                properties: { filePath: { type: "STRING" } },
+                required: ["filePath"]
+              }
+            },
+            {
+              name: "write_file",
+              description: "Writes content to a file on the server.",
+              parameters: {
+                type: "OBJECT",
+                properties: { 
+                  filePath: { type: "STRING" }, 
+                  content: { type: "STRING" } 
+                },
+                required: ["filePath", "content"]
+              }
+            }
+          ]
+        }
+      ],
+      input_audio_transcription: {},
+      output_audio_transcription: {},
     }
   };
 
@@ -87,7 +130,7 @@ ${systemLogs.split('\\n').slice(-15).join('\\n') || 'None documented yet.'}
 router.get('/status', (req, res) => {
   res.json({
     voiceEnabled: !!GEMINI_API_KEY,
-    model: 'gemini-2.0-flash-live-001',
+    model: 'gemini-3.1-flash-live-preview',
     provider: 'Google Gemini Live API',
   });
 });

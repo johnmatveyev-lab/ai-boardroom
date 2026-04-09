@@ -117,9 +117,16 @@ const VoiceModule = (() => {
 
       ws.onclose = (event) => {
         console.log('[Voice] WebSocket closed:', event.code, event.reason);
+        // Log helpful debug info for common close codes
+        if (event.code === 1002) console.error('[Voice] Protocol error — check setup message format');
+        if (event.code === 1003) console.error('[Voice] Unsupported data — check MIME types');
+        if (event.code === 1008) console.error('[Voice] Policy violation — check API key or model access');
+        if (event.code === 1011) console.error('[Voice] Server error — the model may be unavailable');
+        appendTranscript('SYSTEM', `Connection closed (code: ${event.code}). ${event.reason || ''}`);
         cleanup();
         setStatus('disconnected');
-        showWidget(false);
+        // Keep widget visible for a moment so user sees the error
+        setTimeout(() => showWidget(false), 3000);
       };
 
     } catch (err) {
@@ -164,7 +171,7 @@ const VoiceModule = (() => {
     const sc = data.serverContent;
     if (!sc) return;
 
-    // Audio from model
+    // Process parts (Audio, Text, Function Calls)
     if (sc.modelTurn?.parts) {
       for (const part of sc.modelTurn.parts) {
         if (part.inlineData) {
@@ -173,6 +180,9 @@ const VoiceModule = (() => {
         }
         if (part.text) {
           appendTranscript('JARVIS', part.text);
+        }
+        if (part.functionCall) {
+          handleFunctionCall(part.functionCall);
         }
       }
     }
@@ -194,6 +204,56 @@ const VoiceModule = (() => {
     // Turn complete
     if (sc.turnComplete) {
       setStatus('listening');
+    }
+  }
+
+  // ── Handle Tool Execution ─────────────────────────────────────────────────
+  async function handleFunctionCall(functionCall) {
+    console.log('[Voice] 🛠️ Tool Action Requested:', functionCall.name);
+    appendTranscript('SYSTEM', `Executing tool: ${functionCall.name}...`);
+    
+    try {
+      // Route the tool call to the secure Node.js backend
+      const res = await fetch('/api/tools/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: functionCall.name,
+          args: functionCall.args,
+          callId: functionCall.id
+        })
+      });
+      
+      const functionResult = await res.json();
+      console.log('[Voice] 🛠️ Tool Result:', functionResult);
+
+      // Send the result back to Gemini so Jarvis can summarize what happened
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          tool_response: {
+            function_responses: [{
+              id: functionCall.id,
+              name: functionCall.name,
+              response: functionResult.result || { error: functionResult.error }
+            }]
+          }
+        }));
+      }
+      appendTranscript('SYSTEM', 'Tool execution finished.');
+    } catch (err) {
+      console.error('[Voice] Tool bridge failed', err);
+      // Let Jarvis know it failed
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          tool_response: {
+            function_responses: [{
+              id: functionCall.id,
+              name: functionCall.name,
+              response: { error: err.message }
+            }]
+          }
+        }));
+      }
     }
   }
 
@@ -236,10 +296,13 @@ const VoiceModule = (() => {
         }
         const base64 = btoa(binary);
 
-        // Send to Gemini — use "audio/pcm" (not "audio/pcm;rate=16000")
+        // Send to Gemini — new format: realtime_input.audio (media_chunks deprecated)
         ws.send(JSON.stringify({
-          realtimeInput: {
-            audio: { data: base64, mimeType: 'audio/pcm' }
+          realtime_input: {
+            audio: {
+              mime_type: 'audio/pcm',
+              data: base64
+            }
           }
         }));
       };

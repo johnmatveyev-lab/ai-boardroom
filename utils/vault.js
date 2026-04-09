@@ -8,7 +8,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || './obsidian_vault';
 

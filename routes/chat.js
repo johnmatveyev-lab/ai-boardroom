@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import { routeToLLM, getBoardMembers, identifyBoardMember } from '../utils/llm_router.js';
-import { logSystemEvent, readVault, listVault } from '../utils/vault.js';
+import { logSystemEvent } from '../utils/vault.js';
 
 const router = Router();
 
@@ -127,40 +127,18 @@ router.get('/board', (req, res) => {
   });
 });
 
-// ── GET /api/vault ──────────────────────────────────────────────────────────
-// List vault contents
-
-router.get('/vault', async (req, res) => {
-  try {
-    const files = await listVault();
-    res.json({ files });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── GET /api/vault/:path ────────────────────────────────────────────────────
-// Read a specific vault file
-
-router.get('/vault/{*filepath}', async (req, res) => {
-  try {
-    const filePath = req.params.filepath;
-    const content = await readVault(filePath);
-    res.json({ path: filePath, content });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-});
-
 // ── GET /api/status ─────────────────────────────────────────────────────────
 // System health check
 
 router.get('/status', (req, res) => {
+  const openRouterConfigured = !!process.env.OPENROUTER_API_KEY;
   res.json({
     status: 'operational',
     platform: 'AI Boardroom',
     version: '1.0.0',
-    openRouterConfigured: !!process.env.OPENROUTER_API_KEY,
+    openRouterConfigured,
+    // Back-compat for earlier frontend builds
+    apiKeyConfigured: openRouterConfigured,
     geminiConfigured: !!process.env.GEMINI_API_KEY,
     voiceEnabled: !!process.env.GEMINI_API_KEY,
     vaultPath: process.env.OBSIDIAN_VAULT_PATH || './obsidian_vault',

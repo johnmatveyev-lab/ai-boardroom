@@ -2262,3 +2262,275 @@ body {
   transition: all 0.15s;
 }
 .canvas-edit-delete:hover { background: rgba(244,63,94,0.2); border-color: rgba(244,63,94,0.6); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Paperclip Agent Monitor Modal
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.paperclip-monitor-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.paperclip-monitor-modal .modal-content {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 900px;
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.paperclip-monitor-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+}
+
+.paperclip-monitor-modal .modal-header h2 {
+  margin: 0;
+  color: #64c8ff;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.paperclip-monitor-modal .modal-close {
+  background: none;
+  border: none;
+  color: #64c8ff;
+  font-size: 28px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.paperclip-monitor-modal .modal-close:hover {
+  opacity: 1;
+}
+
+.monitor-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+  padding: 0 24px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.monitor-tabs .tab-btn {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.monitor-tabs .tab-btn.active {
+  color: #64c8ff;
+  border-bottom-color: #64c8ff;
+}
+
+.monitor-tabs .tab-btn:hover {
+  color: #64c8ff;
+}
+
+.monitor-tabs .tab-btn + .tab-btn {
+  margin-left: 16px;
+}
+
+.paperclip-monitor-modal .tab-content {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.paperclip-monitor-modal .tab-content.active {
+  display: block;
+}
+
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.agent-card {
+  background: rgba(100, 200, 255, 0.05);
+  border: 1px solid rgba(100, 200, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.agent-card:hover {
+  background: rgba(100, 200, 255, 0.1);
+  border-color: rgba(100, 200, 255, 0.4);
+}
+
+.agent-card .agent-icon {
+  font-size: 24px;
+  color: #64c8ff;
+  margin-bottom: 8px;
+}
+
+.agent-card .agent-info h3 {
+  margin: 0 0 4px 0;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.agent-card .role {
+  margin: 0 0 4px 0;
+  color: #64c8ff;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.agent-card .description {
+  margin: 0 0 8px 0;
+  color: #aaa;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.agent-card .agent-id {
+  display: block;
+  color: #666;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 8px;
+}
+
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-item {
+  background: rgba(100, 200, 255, 0.05);
+  border-left: 3px solid rgba(100, 200, 255, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.2s;
+}
+
+.task-item.status-in_progress {
+  border-left-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.task-item.status-done {
+  border-left-color: #34d399;
+  background: rgba(52, 211, 153, 0.05);
+}
+
+.task-item.status-failed {
+  border-left-color: #f43f5e;
+  background: rgba(244, 63, 94, 0.05);
+}
+
+.task-item.status-assigned {
+  border-left-color: #64c8ff;
+  background: rgba(100, 200, 255, 0.05);
+}
+
+.task-item .task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.task-item .task-id {
+  color: #666;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.task-item .task-status {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(100, 200, 255, 0.2);
+  border-radius: 4px;
+  color: #64c8ff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.task-item .task-title {
+  margin: 0 0 4px 0;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.task-item .task-description {
+  margin: 0 0 8px 0;
+  color: #aaa;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.task-item .task-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.logs-viewer {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: #aaa;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.log-entry {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(100, 200, 255, 0.1);
+  color: #64c8ff;
+}
+
+.log-entry strong {
+  color: #fff;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 24px;
+  color: #666;
+}
+
+.error {
+  color: #f43f5e;
+}

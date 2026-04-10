@@ -7,11 +7,13 @@
 import { Router } from 'express';
 import { routeToLLM, getBoardMembers, identifyBoardMember } from '../utils/llm_router.js';
 import { logSystemEvent } from '../utils/vault.js';
+import { orchestrateMessage, getTaskStatus, getAllAgents } from '../utils/paperclip_orchestration.js';
 
 const router = Router();
 
-// In-memory conversation history (per-session; production would use a DB)
+// In-memory storage
 const conversations = new Map();
+const taskHistory = new Map(); // taskId -> task object (for Paperclip monitoring)
 
 // ── POST /api/chat ──────────────────────────────────────────────────────────
 // Main chat endpoint. Jarvis receives input, delegates to Board Members.
@@ -29,6 +31,11 @@ router.post('/chat', async (req, res) => {
       conversations.set(sessionId, []);
     }
     const history = conversations.get(sessionId);
+
+    // Track task via Paperclip orchestration
+    const orchestrationResult = await orchestrateMessage({ message, sessionId, role });
+    const task = orchestrationResult.task;
+    taskHistory.set(task.id, task);
 
     // Add user message to history
     history.push({ role: 'user', content: message });
@@ -144,6 +151,47 @@ router.get('/status', (req, res) => {
     vaultPath: process.env.OBSIDIAN_VAULT_PATH || './obsidian_vault',
     boardMembers: getBoardMembers().length,
     activeSessions: conversations.size,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ── GET /api/paperclip/agents ──────────────────────────────────────────────
+// List all Paperclip-orchestrated board agents (for monitoring UI)
+
+router.get('/paperclip/agents', (req, res) => {
+  res.json({
+    agents: getAllAgents(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ── GET /api/paperclip/tasks ───────────────────────────────────────────────
+// Get task history for Paperclip UI monitoring
+
+router.get('/paperclip/tasks', (req, res) => {
+  const tasks = Array.from(taskHistory.values());
+  res.json({
+    tasks,
+    totalTasks: tasks.length,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ── GET /api/paperclip/tasks/:taskId ───────────────────────────────────────
+// Get specific task details
+
+router.get('/paperclip/tasks/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  const task = taskHistory.get(taskId);
+
+  if (!task) {
+    return res.status(404).json({ error: 'Task not found' });
+  }
+
+  const status = await getTaskStatus(taskId);
+  res.json({
+    task,
+    status,
     timestamp: new Date().toISOString(),
   });
 });

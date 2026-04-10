@@ -43,8 +43,15 @@ app.use('/api/upload', uploadRoutes);
 // ── Static File Serving ──────────────────────────────────────────────────────
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
+// ── 404 Handler ───────────────────────────────────────────────────────────
+// Return 404 for unhandled API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
 // ── SPA Fallback ────────────────────────────────────────────────────────────
-app.get('/{*splat}', (req, res) => {
+// Serve index.html for all other routes (client-side routing)
+app.use((req, res) => {
   res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 

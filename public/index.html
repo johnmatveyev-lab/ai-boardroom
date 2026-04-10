@@ -71,6 +71,13 @@
             <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
           </svg>
         </button>
+        <button class="header-btn" id="monitorBtn" title="Paperclip Agent Monitor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <line x1="1" y1="4" x2="23" y2="4"></line>
+            <polyline points="10 12 14 16 10 20"></polyline>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -441,6 +448,7 @@
     import { initCanvas } from '/js/canvas.js';
     import { initNotepad } from '/js/notepad.js';
     import { initUpload } from '/js/upload.js';
+    import { initPaperclipMonitor } from '/js/paperclip_monitor.js';
 
     document.getElementById('mindMapBtn').addEventListener('click', () => {
       const modal = document.getElementById('mindMapModal');
@@ -468,6 +476,9 @@
 
     // File Upload
     initUpload();
+
+    // Paperclip Agent Monitor
+    initPaperclipMonitor();
   </script>
 </body>
 </html>

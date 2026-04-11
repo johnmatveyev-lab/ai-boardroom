@@ -13,11 +13,17 @@ const BASE_WORKSPACE = path.resolve(process.cwd());
 const BLOCKED_WRITE_NAMES = new Set(['.env', '.env.local', '.env.development', '.env.production']);
 
 function ensureInsideWorkspace(targetPath) {
-  const normalizedBase = BASE_WORKSPACE.endsWith(path.sep) ? BASE_WORKSPACE : BASE_WORKSPACE + path.sep;
-  const normalizedTarget = targetPath.endsWith(path.sep) ? targetPath : targetPath;
-  if (normalizedTarget === BASE_WORKSPACE) return;
-  if (!normalizedTarget.startsWith(normalizedBase)) {
-    throw new Error('Path escapes BASE_WORKSPACE');
+  const resolvedBase = path.resolve(BASE_WORKSPACE);
+  const resolvedTarget = path.resolve(targetPath);
+  
+  if (!resolvedTarget.startsWith(resolvedBase)) {
+    throw new Error('Security Exception: Path escapes BASE_WORKSPACE');
+  }
+
+  // 🛡️ Security Fix: Block access to .env files
+  const filename = path.basename(resolvedTarget);
+  if (filename.startsWith('.env')) {
+    throw new Error(`Security Exception: Access to sensitive file blocked: ${filename}`);
   }
 }
 
@@ -35,8 +41,19 @@ router.post('/execute', async (req, res) => {
 
     if (name === 'execute_cli_command') {
       const { command } = args;
-      // Note: Executing raw bash from an LLM involves risk.
-      // In a strict production environment, this should run inside a Docker container.
+      // 🛡️ Security Fix: Comprehensive command blacklist
+      const commandLower = command.toLowerCase();
+      const forbidden = [
+        'rm ', 'mv ', 'chmod ', 'chown ', 'dd ', 
+        'kill ', 'pkill ', 'halt ', 'reboot ', 'shutdown ',
+        'curl ', 'wget ', 'ssh ', 'scp ', 'ftp ', 'telnet ',
+        '> /dev/', 'mkfs ', 'mount ', 'umount '
+      ];
+
+      if (forbidden.some(f => commandLower.includes(f))) {
+        throw new Error(`Security Exception: Prohibited command pattern detected.`);
+      }
+
       const { stdout, stderr } = await execAsync(command, {
         cwd: BASE_WORKSPACE,
         maxBuffer: 5 * 1024 * 1024, // 5MB
@@ -56,9 +73,7 @@ router.post('/execute', async (req, res) => {
       if (typeof content !== 'string') throw new Error('content must be a string');
       const targetPath = path.resolve(BASE_WORKSPACE, filePath);
       ensureInsideWorkspace(targetPath);
-      if (BLOCKED_WRITE_NAMES.has(path.basename(targetPath))) {
-        throw new Error(`Refusing to write to blocked file: ${path.basename(targetPath)}`);
-      }
+      // .env check is already handled inside ensureInsideWorkspace
       await fs.mkdir(path.dirname(targetPath), { recursive: true });
       await fs.writeFile(targetPath, content, 'utf-8');
       result = { success: true, message: `File written successfully at ${filePath}` };

@@ -100,6 +100,14 @@ router.post('/shell', async (req, res) => {
     }
 
     const context = getContext(sessionId);
+    
+    // 🛡️ Security Fix: Basic blacklist for highly dangerous shell commands
+    const dangerous = ['rm -rf', ':(){ :|:& };:', '> /dev/sda', 'chmod -R 777 /'];
+    if (dangerous.some(d => command.includes(d))) {
+      await logSystemEvent('security', 'COMMAND_BLOCKED', `Blocked dangerous shell command: ${command}`);
+      return res.status(403).json({ error: 'Forbidden', message: 'Command contains restricted patterns.' });
+    }
+
     const result = await executeShell(command, { timeout });
 
     context.recordExecution('shell', command, result);

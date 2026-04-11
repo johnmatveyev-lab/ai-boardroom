@@ -385,8 +385,14 @@ function renderMarkdown(text) {
   // Italic
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
   
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // Links (🛡️ Scaled-down security check for javascript: schemes)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+    const isDangerous = /^(javascript|data|vbscript):/i.test(url.trim());
+    if (isDangerous) {
+      return `<span class="dangerous-link" title="Blocked dangerous link">${text}</span>`;
+    }
+    return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+  });
   
   // Headers
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');

@@ -18,7 +18,14 @@ const VAULT_PATH = process.env.OBSIDIAN_VAULT_PATH || './obsidian_vault';
  * @returns {Promise<string>} File contents
  */
 export async function readVault(filePath) {
-  const fullPath = path.join(VAULT_PATH, filePath);
+  // 🛡️ Security Fix: Prevent Path Traversal
+  const resolvedVaultPath = path.resolve(VAULT_PATH);
+  const fullPath = path.resolve(VAULT_PATH, filePath);
+
+  if (!fullPath.startsWith(resolvedVaultPath)) {
+    throw new Error(`Security Exception: Access denied to path outside vault area.`);
+  }
+
   try {
     return await fs.readFile(fullPath, 'utf-8');
   } catch (err) {
@@ -36,13 +43,20 @@ export async function readVault(filePath) {
  */
 export async function writeVault(filePath, content) {
   try {
-    const fullPath = path.join(VAULT_PATH, filePath);
+    // 🛡️ Security Fix: Prevent Path Traversal
+    const resolvedVaultPath = path.resolve(VAULT_PATH);
+    const fullPath = path.resolve(VAULT_PATH, filePath);
+
+    if (!fullPath.startsWith(resolvedVaultPath)) {
+      console.warn(`[Vault] Security Warning: Blocked write attempt to ${fullPath}`);
+      return;
+    }
+
     const dir = path.dirname(fullPath);
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(fullPath, content, 'utf-8');
   } catch (err) {
     console.warn(`[Vault] Warning: Could not write to ${filePath}:`, err.message);
-    // Don't throw - allow app to continue even if vault writing fails
   }
 }
 
@@ -53,11 +67,18 @@ export async function writeVault(filePath, content) {
  */
 export async function appendVault(filePath, content) {
   try {
-    const fullPath = path.join(VAULT_PATH, filePath);
+    // 🛡️ Security Fix: Prevent Path Traversal
+    const resolvedVaultPath = path.resolve(VAULT_PATH);
+    const fullPath = path.resolve(VAULT_PATH, filePath);
+
+    if (!fullPath.startsWith(resolvedVaultPath)) {
+      console.warn(`[Vault] Security Warning: Blocked append attempt to ${fullPath}`);
+      return;
+    }
+
     await fs.appendFile(fullPath, '\n' + content, 'utf-8');
   } catch (err) {
     console.warn(`[Vault] Warning: Could not append to ${filePath}:`, err.message);
-    // Don't throw - allow app to continue even if vault writing fails
   }
 }
 

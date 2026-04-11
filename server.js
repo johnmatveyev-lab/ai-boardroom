@@ -17,6 +17,7 @@ import toolsRoutes from './routes/tools.js';
 import vaultRoutes from './routes/vault.js';
 import canvasRoutes from './routes/canvas.js';
 import uploadRoutes from './routes/upload.js';
+import executionRoutes from './routes/execution.js';
 import { logSystemEvent } from './utils/vault.js';
 
 dotenv.config({ quiet: true });
@@ -39,6 +40,7 @@ app.use('/api/tools', toolsRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/canvas', canvasRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/execution', executionRoutes);
 
 // ── Static File Serving ──────────────────────────────────────────────────────
 app.use('/uploads', express.static(join(__dirname, 'uploads')));

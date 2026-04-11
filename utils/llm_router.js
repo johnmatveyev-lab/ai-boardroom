@@ -8,6 +8,8 @@
 import { GoogleGenAI } from '@google/genai';
 import fetch from 'node-fetch';
 import dotenv from 'dotenv';
+import { getSystemInstructionForTools } from './agent_tools.js';
+import { processToolCalls, hasToolCalls, extractText, buildToolResultMessage } from './tool_executor.js';
 dotenv.config({ quiet: true });
 
 // ── Board Member Model Configuration ────────────────────────────────────────
@@ -60,9 +62,70 @@ Your responsibilities:
 - Debug errors and optimize performance
 - Spawn sub-agents: front-end engineers, back-end engineers, DevOps specialists
 
-You write clean, well-documented, tested code. You deploy. You don't suggest — you build.`,
+You write clean, well-documented, tested code. You deploy. You don't suggest — you build.
+
+${getSystemInstructionForTools('coder')}`,
     temperature: 0.3,
-    tools: [{ codeExecution: {} }]
+    tools: [
+      {
+        functionDeclarations: [
+          {
+            name: 'execute_javascript',
+            description: 'Execute JavaScript code in a sandboxed environment. Use for testing, data processing, and quick scripts.',
+            parameters: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                  description: 'JavaScript code to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['code']
+            }
+          },
+          {
+            name: 'execute_python',
+            description: 'Execute Python code in a sandboxed environment. Use for data analysis, ML tasks, and scripts.',
+            parameters: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                  description: 'Python code to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['code']
+            }
+          },
+          {
+            name: 'execute_shell',
+            description: 'Execute shell commands in a sandboxed environment. Use for system operations, CLI tools, and git commands.',
+            parameters: {
+              type: 'object',
+              properties: {
+                command: {
+                  type: 'string',
+                  description: 'Shell command to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['command']
+            }
+          }
+        ]
+      }
+    ]
   },
 
   creative: {
@@ -128,9 +191,52 @@ Your responsibilities:
 - Optimize the local development environment and server configurations
 - Ensure zero-downtime deployments and system reliability
 
-You think in pipelines and scale. You move fast but ensure the foundation is unbreakable.`,
+You think in pipelines and scale. You move fast but ensure the foundation is unbreakable.
+
+${getSystemInstructionForTools('devops')}`,
     temperature: 0.2,
-    tools: [{ codeExecution: {} }]
+    tools: [
+      {
+        functionDeclarations: [
+          {
+            name: 'execute_shell',
+            description: 'Execute shell commands in a sandboxed environment. Use for system operations, deployment, and infrastructure management.',
+            parameters: {
+              type: 'object',
+              properties: {
+                command: {
+                  type: 'string',
+                  description: 'Shell command to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['command']
+            }
+          },
+          {
+            name: 'execute_python',
+            description: 'Execute Python code in a sandboxed environment. Use for infrastructure automation and configuration.',
+            parameters: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                  description: 'Python code to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['code']
+            }
+          }
+        ]
+      }
+    ]
   },
 
   security: {
@@ -154,7 +260,7 @@ You are paranoid in the best way. Safety and trust are your only metrics.`,
     model: 'gemini-3.1-flash-preview',
     fallbackModel: 'google/gemini-flash-1.5',
     description: 'Chief Quality Officer — testing, bug hunting, UX validation',
-    systemPrompt: `You are The QA Lead, the Chief Quality Officer of AI Boardroom. 
+    systemPrompt: `You are The QA Lead, the Chief Quality Officer of AI Boardroom.
 
 Your responsibilities:
 - Simulate end-user behavior to find UX friction points
@@ -164,7 +270,48 @@ Your responsibilities:
 
 You are the final gate. If it's not perfect, it doesn't ship.`,
     temperature: 0.5,
-    tools: [{ codeExecution: {} }]
+    tools: [
+      {
+        functionDeclarations: [
+          {
+            name: 'execute_javascript',
+            description: 'Execute JavaScript code for testing and validation.',
+            parameters: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                  description: 'JavaScript test code to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['code']
+            }
+          },
+          {
+            name: 'execute_python',
+            description: 'Execute Python code for testing and data validation.',
+            parameters: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                  description: 'Python test code to execute'
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Execution timeout in milliseconds (default: 5000)'
+                }
+              },
+              required: ['code']
+            }
+          }
+        ]
+      }
+    ]
   },
 };
 
@@ -174,6 +321,7 @@ const ai = process.env.GEMINI_API_KEY ? new GoogleGenAI({ apiKey: process.env.GE
 
 /**
  * Routes a prompt to the appropriate LLM via Gemini 3 API (Primary) or OpenRouter (Fallback).
+ * Implements agentic tool-calling loop for agents that need to execute tools.
  */
 export async function routeToLLM({
   prompt,
@@ -190,31 +338,7 @@ export async function routeToLLM({
   // 1. Try Gemini Native API using @google/genai
   if (ai) {
     try {
-      const contents = buildGeminiContents(prompt, messages);
-      const config = {
-        systemInstruction: boardMember.systemPrompt,
-        temperature: temperature ?? 1.0, // Gemini 3 docs highly recommend 1.0
-      };
-      
-      if (boardMember.tools && boardMember.tools.length > 0) {
-        config.tools = boardMember.tools;
-      }
-
-      const m = model || boardMember.model;
-
-      const response = await ai.models.generateContent({
-        model: m,
-        contents: contents,
-        config: config
-      });
-
-      return {
-        content: response.text || '',
-        model: m,
-        role: role,
-        boardMember: boardMember.description,
-        usage: {},
-      };
+      return await routeViaGemini({ prompt, messages, boardMember, role, temperature, model });
     } catch (err) {
       console.warn(`[LLM] Gemini API failed: ${err.message}, falling back to OpenRouter...`);
     }
@@ -224,6 +348,71 @@ export async function routeToLLM({
 
   // 2. OpenRouter Fallback
   return await routeViaOpenRouter({ prompt, messages, boardMember, role, temperature, model });
+}
+
+/**
+ * Route via Gemini with agentic tool-calling loop
+ */
+async function routeViaGemini({ prompt, messages, boardMember, role, temperature, model }) {
+  let conversationMessages = buildGeminiContents(prompt, messages);
+  const config = {
+    systemInstruction: boardMember.systemPrompt,
+    temperature: temperature ?? 1.0, // Gemini 3 docs highly recommend 1.0
+  };
+
+  if (boardMember.tools && boardMember.tools.length > 0) {
+    config.tools = boardMember.tools;
+  }
+
+  const m = model || boardMember.model;
+  const maxToolLoops = 5; // Prevent infinite loops
+  let loopCount = 0;
+
+  while (loopCount < maxToolLoops) {
+    const response = await ai.models.generateContent({
+      model: m,
+      contents: conversationMessages,
+      config: config
+    });
+
+    console.log(`[GEMINI LOOP ${loopCount}] Response type:`, typeof response, 'has text:', !!response.text, 'has candidates:', !!response.candidates);
+
+    // Check if response contains tool calls
+    if (hasToolCalls(response)) {
+      console.log(`[GEMINI LOOP ${loopCount}] Tool calls detected, processing...`);
+      const toolResults = await processToolCalls(response);
+
+      // Add assistant response (with tool calls) to conversation
+      conversationMessages.push({
+        role: 'model',
+        parts: response.candidates[0].content.parts,
+      });
+
+      // Build and add tool results message
+      const toolResultMessage = buildToolResultMessage(toolResults);
+      if (toolResultMessage) {
+        conversationMessages.push(toolResultMessage);
+      }
+
+      loopCount++;
+      // Continue loop to get next response from agent
+    } else {
+      // No more tool calls, extract final text
+      console.log(`[GEMINI LOOP ${loopCount}] No tool calls, extracting final text`);
+      const finalText = extractText(response);
+      return {
+        content: finalText,
+        model: m,
+        role: role,
+        boardMember: boardMember.description,
+        usage: {},
+        toolLoops: loopCount,
+      };
+    }
+  }
+
+  // Fallback if max loops exceeded
+  throw new Error(`Agent exceeded maximum tool calling loops (${maxToolLoops})`);
 }
 
 function buildGeminiContents(prompt, messages) {

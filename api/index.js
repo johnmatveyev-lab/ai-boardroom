@@ -16,6 +16,8 @@ import vaultRoutes from '../routes/vault.js';
 import canvasRoutes from '../routes/canvas.js';
 import uploadRoutes from '../routes/upload.js';
 import executionRoutes from '../routes/execution.js';
+import { requireAuth } from '../utils/auth.js';
+import { rateLimiter } from '../utils/rate_limiter.js';
 
 dotenv.config({ quiet: true });
 
@@ -25,7 +27,18 @@ const __dirname = dirname(__filename);
 const app = express();
 
 // ── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',');
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
+app.use(rateLimiter);
 app.use(express.json());
 
 // Debug middleware
@@ -37,11 +50,11 @@ app.use((req, res, next) => {
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.use('/api', chatRoutes);
 app.use('/api/voice', voiceRoutes);
-app.use('/api/tools', toolsRoutes);
-app.use('/api/vault', vaultRoutes);
-app.use('/api/canvas', canvasRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/execution', executionRoutes);
+app.use('/api/tools', requireAuth, toolsRoutes);
+app.use('/api/vault', requireAuth, vaultRoutes);
+app.use('/api/canvas', requireAuth, canvasRoutes);
+app.use('/api/upload', requireAuth, uploadRoutes);
+app.use('/api/execution', requireAuth, executionRoutes);
 
 // ── Static File Serving ──────────────────────────────────────────────────────
 app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));

@@ -208,15 +208,30 @@ const VoiceModule = (() => {
   }
 
   // ── Handle Tool Execution ─────────────────────────────────────────────────
+  let toolsKeyPromise = null;
+  function getToolsKey() {
+    if (!toolsKeyPromise) {
+      toolsKeyPromise = fetch('/api/tools/session-key')
+        .then(r => r.json())
+        .then(data => (data.enabled ? data.key : null))
+        .catch(() => null);
+    }
+    return toolsKeyPromise;
+  }
+
   async function handleFunctionCall(functionCall) {
     console.log('[Voice] 🛠️ Tool Action Requested:', functionCall.name);
     appendTranscript('SYSTEM', `Executing tool: ${functionCall.name}...`);
-    
+
     try {
-      // Route the tool call to the secure Node.js backend
+      const toolsKey = await getToolsKey();
+      if (!toolsKey) {
+        throw new Error('Tool bridge is disabled on the server (set TOOLS_API_KEY in .env to enable it)');
+      }
+      // Route the tool call to the Node.js backend
       const res = await fetch('/api/tools/execute', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Tools-Key': toolsKey },
         body: JSON.stringify({
           name: functionCall.name,
           args: functionCall.args,

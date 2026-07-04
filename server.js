@@ -7,6 +7,8 @@
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -28,9 +30,45 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors());
+// CSP is left to the app's own <script>/<link> tags for now (index.html pulls
+// a CDN script + Google Fonts) rather than guessing a safe policy here.
+app.use(helmet({ contentSecurityPolicy: false }));
+
+// Cross-origin browser access is denied by default — same-origin requests
+// (the app's own frontend) are unaffected either way, since CORS only
+// governs cross-origin calls. Set ALLOWED_ORIGINS (comma-separated) in .env
+// if this frontend is ever served from a different origin than the API.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+app.use(cors(allowedOrigins.length ? { origin: allowedOrigins } : { origin: false }));
+
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
+
+// ── Rate limiting ────────────────────────────────────────────────────────────
+// These routes either spend money on a metered LLM API or grant filesystem /
+// process access — they get a much tighter budget than static assets.
+const llmLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — please slow down.' },
+});
+const toolsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — please slow down.' },
+});
+app.use('/api/chat', llmLimiter);
+app.use('/api/delegate', llmLimiter);
+app.use('/api/upload', llmLimiter);
+app.use('/api/voice/token', llmLimiter);
+app.use('/api/tools', toolsLimiter);
 
 // ── API Routes ──────────────────────────────────────────────────────────────
 app.use('/api', chatRoutes);

@@ -20,7 +20,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "description": "AI Boardroom — multi-agent platform where autonomous AI agents build, deploy, and test real software",
+  "description": "AI Boardroom \u2014 multi-agent platform where autonomous AI agents build, deploy, and test real software",
   "dependencies": {
     "@google/genai": "^1.49.0",
     "cors": "^2.8.6",
@@ -31,5 +31,8 @@
     "node-fetch": "^3.3.2",
     "uuid": "^13.0.0",
     "ws": "^8.20.0"
+  },
+  "overrides": {
+    "protobufjs": "7.5.5"
   }
 }

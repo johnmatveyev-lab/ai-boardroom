@@ -65,9 +65,8 @@ app.use('/api/vault', vaultRoutes);
 app.use('/api/canvas', canvasRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// Tool bridge is used by the voice widget in-browser — keep open but tools.js is hardened.
-// Code execution sandbox is the highest-risk surface; protect with BOARDROOM_API_KEY when set.
-app.use('/api/tools', toolsRoutes);
+// Tool bridge and code execution sandbox are both high-risk surfaces; protect with BOARDROOM_API_KEY when set.
+app.use('/api/tools', requireAuth, toolsRoutes);
 app.use('/api/execution', requireAuth, executionRoutes);
 
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
